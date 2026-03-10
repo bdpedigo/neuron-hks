@@ -1,208 +1,140 @@
 ---
-title: Academic Project Page Template
+title: "A quantitative census of millions of postsynaptic structures in a large electron microscopy volume of mouse visual cortex"
 authors:
-  - name: Roman Hauksson
-    url: https://roman.technology
-    institution: University of Texas at Dallas
-    notes: ["*", †]
-  - name: Author Two
-    institution: Institution Two
-    notes: ["*", †]
-  - name: Author Three
-    institution: Institution Three
+  - name: Benjamin D. Pedigo
+    url: https://bdpedigo.github.io
+    institution: Allen Institute
     notes: ["*"]
-  - name: Author Four
-    institution: Institution Four
-conference: Conference Name
+  - name: Bethanny P. Danskin
+    institution: Allen Institute
+  - name: Rachael Swanstrom
+    institution: Allen Institute
+    notes: ["*"]
+  - name: Erika Neace
+    institution: Allen Institute
+    notes: ["*"]
+  - name: Sven Dorkenwald
+    institution: Allen Institute, MIT
+  - name: Nuno Maçarico da Costa
+    institution: Allen Institute
+  - name: Casey M. Schneider-Mizell
+    institution: Allen Institute
+  - name: Forrest Collman
+    institution: Allen Institute
+    notes: ["*"]
+conference: bioRxiv 2026
 notes:
   - symbol: "*"
-    text: author note one
-  - symbol: †
-    text: author note two
+    text: "Correspondence: ben.pedigo@alleninstitute.org, forrestc@alleninstitute.org"
 links:
   - name: Paper
-    url: https://github.com/RomanHauksson/academic-project-astro-template
+    url: https://www.biorxiv.org/content/10.64898/2026.02.19.706834
     icon: ri:file-pdf-2-line
-  - name: Code
-    url: https://github.com/RomanHauksson/academic-project-astro-template
+  - name: meshmash
+    url: https://github.com/bdpedigo/meshmash
     icon: ri:github-line
-  - name: arXiv
-    url: https://github.com/RomanHauksson/academic-project-astro-template
-    icon: academicons:arxiv
-  - name: Slides
-    url: https://github.com/RomanHauksson/academic-project-astro-template
-    icon: ri:slideshow-2-line
+  - name: Experiments
+    url: https://github.com/bdpedigo/ssa-experiments
+    icon: ri:github-line
+  - name: Cloud deployment
+    url: https://github.com/bdpedigo/ssa-cloud
+    icon: ri:github-line
 
-# The color theme of the page. Defaults to "device" (the preference set in the user's brower or operating system). Setting this to "light" or "dark" will override the user's preference. This is useful if your figures only look good in one theme.
 theme: device
-
-# This is the icon that appears in the user's browser tab. To customize, change the favicon.svg file in /public/, or add your own file to /public/ and change the filename here.
 favicon: favicon.svg
-
-# These keys are optional. If a link to your project page is in a Google search result, text message, or social media post, it will often appear as a "link preview card" based on its title, description, favicon, and thumbnail. After you publish your page, you can double check that these previews look right using [this tool](https://linkpreview.xyz/)
-description: Simple project page template for your research paper, built with Astro and Tailwind
-thumbnail: screenshot-light.png
+description: "A cost-efficient computational pipeline for classifying postsynaptic targets and segmenting spines across 208 million synapses in the MICrONS mouse visual cortex dataset, using mesh-based heat kernel signatures."
 ---
 
-import Video from "./components/Video.astro";
 import HighlightedSection from "./components/HighlightedSection.astro";
 import SmallCaps from "./components/SmallCaps.astro";
 import Figure from "./components/Figure.astro";
 import Picture from "./components/Picture.astro";
-import ModelViewer from "./components/ModelViewer.astro"
-import TwoColumns from "./components/TwoColumns.astro";
-import YouTubeVideo from "./components/YouTubeVideo.astro";
-import Carousel from "./components/Carousel.astro";
-import CarouselSlide from "./components/CarouselSlide.astro";
 import Wide from "./components/Wide.astro";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/starwind/tabs";
-import { Comparison } from "./components/Comparison.tsx";
 
-import outside from "./assets/outside.mp4";
-import dogsDiffc from "./assets/dogs-diffc.png"
-import dogsTrue from "./assets/dogs-true.png"
-import dogsMsillm from "@/assets/dogs-msillm.jpg"
-
-<Video src={outside} />
+import diagramApproach from "./assets/diagram_approach_figure.png";
+import showPipeline from "./assets/show_pipeline_figure.png";
+import cellGallery from "./assets/cell-gallery.png";
 
 <HighlightedSection>
 
 ## Abstract
 
-This is a template you can use to create a professional project page for your research paper. [See the code for the template and instructions on how to use it yourself on GitHub](https://github.com/RomanHauksson/academic-project-astro-template). It's made with the [Astro web framework](https://astro.build/) and styled with [Tailwind](https://tailwindcss.com/). You write the content in [MDX](https://mdxjs.com/), which enables markdown formatting like **bold**, _italics_, and ~strikethrough~, as well as custom components like <SmallCaps>small caps.</SmallCaps>
+Neurons display remarkable sub-cellular specificity in their synaptic targeting, which varies by cell type---for example, excitatory neurons prefer to target the spines of other excitatory cells. Modern dense neuroanatomy data, such as large volumetric electron microscopy connectomes, enable the study of this sub-cellular specificity and its context in a circuit at unprecedented scale and resolution. However, this scale has also made it challenging to create accurate and efficient methods for classifying and segmenting fine cell components (including spines) across entire volumes. Here, we present a cost-efficient computational pipeline for classifying postsynaptic targets and segmenting structures such as spines. Our method relies only on having a mesh representation of a neuron and avoids processing imaging data directly. Instead, we leverage tools from geometry processing to create features from the intrinsic geometry of a neuron's surface. We couple this core technique with strategies for accelerating the computation and reducing the storage size of these features, creating a pipeline which can be deployed reliably over hundreds of thousands of neurons in the commercial cloud for a few hundred dollars. We then show how a simple but accurate classifier can use these mesh-based features to classify synapses as targeting somas, dendritic shafts, or spines (weighted F1 score 0.961). Using this pipeline, we create a publicly available map of the postsynaptic structures at over 208.6 million synapses in the MICrONS mouse visual cortex dataset. We present an overview of this census of postsynaptic targeting in MICrONS, finding expected patterns (e.g., excitatory neurons preferentially targeting excitatory spines) as well as less characterized exceptions (e.g., Layer 5 near-projecting and Layer 6 corticothalamic cells often connecting to excitatory neuron shafts). These tools also enable us to detect spines which receive multiple synaptic inputs---we find that the frequency of these multiply-innervated spines is unexpectedly variable across cells even within a cell type. We make our postsynaptic target predictions available for study, as well as the code for the computational pipeline and commercial cloud deployment. More generally, our work demonstrates how representations derived from neuronal meshes can be a powerful and scalable primitive for describing neural morphologies.
 
 </HighlightedSection>
 
-## Visuals
+## Approach: Heat Kernel Signatures on Neuron Meshes
 
-### Picture
+A long-standing challenge in large-scale connectomics is classifying the sub-cellular compartment that each synapse targets---whether it lands on a dendritic spine, a dendritic shaft, or the soma. Prior approaches rely on volumetric image processing or manual annotation, both of which become impractical at the scale of modern millimeter-scale datasets containing hundreds of millions of synapses.
 
-Use the `Picture` component to display images. If you have a figure in PDF format, you can pass in its path as the `src` prop and it will be converted into a web-friendly image automatically.
+We take a different route: instead of processing the raw imagery, we work directly with the **mesh surface** of each reconstructed neuron. Specifically, we compute the **heat kernel signature (HKS)**---a feature derived from how heat diffuses across the mesh surface. Intuitively, a unit of heat placed on an isolated spine is "trapped" and dissipates slowly, whereas heat placed on a broad dendritic shaft or soma spreads quickly across the surface. This differential behavior over a range of timescales produces a compact, discriminative feature vector at each mesh vertex that cleanly separates spines, shafts, and somas without ever touching the underlying electron microscopy imagery.
 
-<Picture src={dogsDiffc} alt="Photo of two running dogs, lossily compressed using the DiffC algorithm" />
+The HKS is computed from the eigenvectors and eigenvalues of the robust mesh Laplacian:
 
-### Wide visual
+$$k_t(x) = \sum_{i=1}^{D} e^{-\lambda_i t} \phi_i^2(x)$$
 
-I constrained the maximum width of the text column to make sure it's readable even when the screen is wide. But images and other visuals should "break out" and take up more horizontal space: for this, try wrapping them in the `Wide` component.
+where $\lambda_i$ and $\phi_i$ are the $i$-th eigenvalue and eigenvector, and $t$ is a timescale. Assembling these values across a range of logarithmically spaced timescales gives a 32-dimensional descriptor at each synaptic site.
 
 <Wide>
-  <Picture src={dogsDiffc} alt="Photo of two running dogs, lossily compressed using the DiffC algorithm" />
+  <Figure>
+    <Picture slot="figure" src={diagramApproach} alt="Diagram of heat kernel signature computation and its use on neuron surface meshes, showing the conceptual basis of heat diffusion on spines versus shafts and example HKS features for each class" />
+    <Fragment slot="caption">**Figure 1.** Diagram of heat kernel signature (HKS) computation and its use on neuron surface meshes. **(A)** Conceptually, the HKS is computed by placing a unit of heat at a point on a mesh and allowing it to diffuse on the mesh surface according to the heat equation. **(B)** Plot of heat remaining at the example point as time evolves. **(C)** Example heat diffusion shown for a postsynaptic site on the soma (top), a dendritic shaft (middle), and a spine (bottom), illustrating the differential behavior of heat diffusion based on local geometry. **(D)** Manual labels applied to putative synaptic inputs on an example neuron. **(E)** HKS features for mesh points in each synapse category, scaled by the mean value per timescale. Note the clear separability among soma, shaft, and spine categories.</Fragment>
+  </Figure>
 </Wide>
 
-### Figure with caption
+## A Scalable, Cloud-Deployable Pipeline
 
-Wrap a visual in a `Figure` component to add a caption.
+Computing the full eigendecomposition of a neuron mesh with millions of vertices is prohibitively expensive. To scale HKS to an entire cubic-millimeter dataset, we developed a suite of complementary optimizations:
 
-<Figure>
-  <Picture slot="figure" src={dogsDiffc} alt="Photo of two running dogs, lossily compressed using the DiffC algorithm" />
-  <Fragment slot="caption">A photo of two dogs running side-by-side in shallow water, lossily compressed using the [DiffC algorithm](https://jeremyiv.github.io/diffc-project-page/).</Fragment>
-</Figure>
+- **Mesh simplification** via quadric decimation (70% vertex reduction) before eigendecomposition, with negligible accuracy loss
+- **Overlapping spectral mesh splitting** to process large neurons in parallel chunks
+- **Band-by-band eigendecomposition**, computing eigenpairs in batches rather than all at once
+- **Mesh agglomeration** for lossy compression of the HKS vectors, reducing storage by 27× after gzip compression
 
-### Comparison slider
+Together, these yield a **42× speedup** in compute time (from ~39,000 s to ~920 s per 36-neuron batch) while maintaining **96.8% classification accuracy**---unchanged from the naive implementation. The full pipeline was deployed on the commercial cloud for **under $500** to process all 75,241 neurons in the MICrONS dataset.
 
-Use the `Comparison` component to compare two visuals with an interactive slider.
+<Wide>
+  <Figure>
+    <Picture slot="figure" src={showPipeline} alt="Pipeline diagram showing key steps, computation time comparison, storage size comparison, and accuracy with and without the proposed modifications" />
+    <Fragment slot="caption">**Figure 2.** A scalable, accurate pipeline for spine detection from neuronal mesh data. **(A)** Diagram of key steps in the cloud-deployable pipeline. **(B)** Total HKS computation time for naive versus proposed approach. **(C)** Storage size after gzip compression. **(D)** Classification accuracy on held-out neurons with and without the proposed modifications. **(E)** Mean confusion matrix across 5 cross-validation folds.</Fragment>
+  </Figure>
+</Wide>
 
-<Comparison client:idle >
-  <Picture slot="itemOne" src={dogsDiffc} alt="Photo of two running dogs, lossily compressed using the DiffC algorithm" />
-  <Picture slot="itemTwo" src={dogsTrue} alt="True photo of two dogs running side-by-side in shallow water" />
-</Comparison>
+## Classifying 208.6 Million Synapses Across MICrONS
 
-### Tab panels
+We applied the pipeline to the full [MICrONS mouse visual cortex dataset](https://www.microns-explorer.org/), processing 75,241 neurons and classifying each synapse as targeting a **soma**, **dendritic shaft**, or **spine**. A random forest classifier trained on 110,946 manually labeled synapses achieves a weighted F1 score of **0.961** overall---0.977 on excitatory neurons and 0.925 on inhibitory neurons. This substantially outperforms the NEURD baseline (weighted F1 0.842).
 
-Tab panels are a great way to display a labeled collection of related visuals without taking up too much space.
+The resulting dataset---postsynaptic target labels for over **208.6 million synapses**---is publicly available via the CAVE infrastructure (table: `synapse_target_predictions_ssa_v2`).
 
-<Tabs defaultValue="true">
-  <TabsList>
-    <TabsTrigger value="true">Ground truth</TabsTrigger>
-    <TabsTrigger value="diffc">DiffC (Flux-dev)</TabsTrigger>
-    <TabsTrigger value="msillm">MS-ILLM</TabsTrigger>
-  </TabsList>
-  <TabsContent value="true">
-    <Picture
-      src={dogsTrue}
-      alt="True photo of two dogs running side-by-side in shallow water"
-    />
-  </TabsContent>
-  <TabsContent value="diffc">
-    <Picture
-      src={dogsDiffc}
-      alt="Photo of two running dogs, lossily compressed using the DiffC algorithm"
-    />
-  </TabsContent>
-  <TabsContent value="msillm">
-    <Picture
-      src={dogsMsillm}
-      alt="Photo of two running dogs, lossily compressed using MS-ILLM"
-    />
-  </TabsContent>
-</Tabs>
+<Wide>
+  <Figure>
+    <Picture slot="figure" src={cellGallery} alt="Example neurons from each major cell type colored by predicted postsynaptic structure (spine in yellow, shaft in blue, soma in red), with insets showing zoomed spine regions and a bar chart of per-cell-type validation accuracy" />
+    <Fragment slot="caption">**Figure 3.** Model results on MICrONS and validation data. **(A)** Example neurons from each manually labeled cell type, colored by prediction: spine (yellow/gold), shaft (blue), soma (red). Insets show zoom-ins on regions with putative spines. **(B)** Validation accuracy on synapses sampled from each cell type for neurons held out during training.</Fragment>
+  </Figure>
+</Wide>
 
-### Carousel
+## Key Census Findings
 
-A carousel is another useful pattern for a collection of visuals that don't necessarily have meaningful labels.
+**Excitatory versus inhibitory targeting.** Excitatory neurons in MICrONS receive an average of 70.3% of their synaptic inputs onto spines, compared to just 19.8% for inhibitory neurons. Among excitatory cell types, Layer 2/3 pyramidal cells have the highest spine-input fraction (75.9%) while Layer 5 near-projecting (NP) cells are notably lower (42.1%).
 
-<Carousel>
-  <CarouselSlide>
-    <Picture src={dogsTrue} alt="True photo of two dogs running side-by-side in shallow water" />
-  </CarouselSlide>
-  <CarouselSlide>
-    <Picture src={dogsDiffc} alt="Photo of two running dogs, lossily compressed using the DiffC algorithm" />
-  </CarouselSlide>
-  <CarouselSlide>
-    <Picture
-      src={dogsMsillm}
-      alt="Photo of two running dogs, lossily compressed using MS-ILLM"
-    />
-  </CarouselSlide>
-</Carousel>
+**Unexpected output targeting by L5 NP and L6 CT cells.** While most excitatory neurons strongly prefer to target spines when contacting other excitatory cells (83.3% on average), Layer 5 NP and Layer 6 corticothalamic (CT) cells are striking exceptions: they direct 45.5% and 44.6% of their excitatory-to-excitatory outputs onto dendritic shafts---a pattern more typical of inhibitory neurons. These two cell types share a late-stage developmental lineage, suggesting a common developmental program may underlie this unusual targeting preference.
 
-## Two columns
+**Multi-input spines are highly variable.** The pipeline also enables detection of spines that receive more than one synaptic input. On average, 6.1% of excitatory neuron spines are multiply innervated---but this fraction is strikingly variable: among Layer 2/3 pyramidal cells alone, the range spans from 2.2% to 19.3% across individual cells. This variability cannot be explained by spine size, soma depth, total synapse count, or other measured morphological features, pointing to dynamic processes not captured by the static connectome.
 
-Use the two columns component to display two columns of content. In this example, the first column contains a YouTube video embed and the second column contains an interactive 3D model viewer. By default, they display side by side, but if the screen is narrow enough (for example, on mobile), they're arranged vertically.
+**Inhibitory inputs preferentially target multi-input spines.** Thalamic and local excitatory axons direct 10.8% and 8.2% of their outputs to multi-input spines, respectively. Inhibitory neurons, by contrast, send approximately 70% of their outputs to multi-input spines---far exceeding their representation. Multi-input spines are also significantly larger than single-input spines, with a strong correlation between spine volume and excitatory cleft size ($r = 0.82$) but only a weak correlation with inhibitory cleft size ($r = 0.10$).
 
-<TwoColumns>
-  <YouTubeVideo slot="left" videoId="wjZofJX0v4M" />
-  <ModelViewer slot="right" src="/BoxVertexColors.glb" alt="A cube colored with a rainbow gradient" />
-</TwoColumns>
+## Data & Code
 
-## $\LaTeX$
+All postsynaptic target predictions are publicly available via the [MICrONS CAVE](https://www.microns-explorer.org/) infrastructure (table: `synapse_target_predictions_ssa_v2`). Code for the mesh processing pipeline is available as the [**meshmash**](https://github.com/bdpedigo/meshmash) Python library. Experiment code and cloud deployment scripts are available in the linked repositories above.
 
-You can also add $\LaTeX$ formulas, rendered during the build process using [$\KaTeX$](https://katex.org/) so they're quick to load for visitors of your project page. You can write them inline, like this: $a^2 + b^2 = c^2$. Or, you can write them as a block:
-
-$$
-\int_a^b f(x) dx
-$$
-
-## Citation
-
-If you copy your bibliography into `./bibliography.bib`, you can cite papers using their BibTeX keys, and they'll be automatically formatted and included in the bibliography section at the end. For example: [@vaswani2017attention]. Note that these citations are distinct from footnotes[^mynote], which show up in a separate section if you use them.
-
-[^mynote]: On the web, they should really be called "endnotes", since each page constitutes a full document.
-
-## Table
-
-Add simple tables using [GitHub Flavored Markdown syntax](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/organizing-information-with-tables):
-
-| Model | Accuracy | F1 score | Training time (hours) |
-| :--- | :---: | :---: | :---: |
-| BERT-base | 0.89 | 0.87 | 4.5 |
-| RoBERTa-large | 0.92 | 0.91 | 7.2 |
-| DistilBERT | 0.86 | 0.84 | 2.1 |
-| XLNet | 0.90 | 0.89 | 6.8 |
-
-## BibTeX citation
-
-Displaying the BibTeX entry for your paper in a code block makes it easy to copy and paste.
+## BibTeX
 
 ```bibtex
-@misc{roman2024academic,
-  author = "{Roman Hauksson}",
-  title = "Academic Project Page Template",
-  year = "2024",
-  howpublished = "\url{https://research-template.roman.technology}",
+@article{pedigo2026census,
+  author  = {Pedigo, Benjamin D. and Danskin, Bethanny P. and Swanstrom, Rachael and Neace, Erika and Dorkenwald, Sven and {Ma\c{c}arico da Costa}, Nuno and Schneider-Mizell, Casey M. and Collman, Forrest},
+  title   = {A quantitative census of millions of postsynaptic structures in a large electron microscopy volume of mouse visual cortex},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.02.19.706834},
 }
 ```
-
-## Bibliography
-
-[^ref]
