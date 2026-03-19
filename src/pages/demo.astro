@@ -49,7 +49,7 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         </p>
       </header>
 
-      <MeshDemo client:load />
+      <MeshDemo apiUrl={import.meta.env.PUBLIC_HKS_API_URL ?? ""} client:load />
 
       <section class="mt-10">
         <h2>Supported formats</h2>

@@ -46,6 +46,90 @@ function defaultMaterial() {
 }
 
 // ---------------------------------------------------------------------------
+// Base64 → typed-array helpers
+// ---------------------------------------------------------------------------
+
+function decodeB64F32(b64: string): Float32Array {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Float32Array(buf.buffer);
+}
+
+function decodeB64I32(b64: string): Int32Array {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Int32Array(buf.buffer);
+}
+
+// ---------------------------------------------------------------------------
+// Viridis colormap (8 anchor colours, linear interpolation)
+// ---------------------------------------------------------------------------
+
+const VIRIDIS: [number, number, number][] = [
+  [0.267, 0.005, 0.329],
+  [0.275, 0.194, 0.494],
+  [0.213, 0.359, 0.551],
+  [0.152, 0.498, 0.558],
+  [0.122, 0.624, 0.533],
+  [0.290, 0.742, 0.441],
+  [0.628, 0.823, 0.284],
+  [0.993, 0.906, 0.144],
+];
+
+function viridis(t: number): [number, number, number] {
+  t = Math.max(0, Math.min(1, t));
+  const n = VIRIDIS.length - 1;
+  const scaled = t * n;
+  const i = Math.floor(scaled);
+  const f = scaled - i;
+  if (i >= n) return VIRIDIS[n];
+  const a = VIRIDIS[i];
+  const b = VIRIDIS[i + 1];
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+}
+
+function applyFeatureColors(
+  group: THREE.Group,
+  hksFlat: Float32Array,
+  nVerts: number,
+  nFeatures: number,
+  featureIdx: number,
+) {
+  let vmin = Infinity;
+  let vmax = -Infinity;
+  for (let i = 0; i < nVerts; i++) {
+    const v = hksFlat[i * nFeatures + featureIdx];
+    if (isFinite(v)) {
+      if (v < vmin) vmin = v;
+      if (v > vmax) vmax = v;
+    }
+  }
+  const range = vmax > vmin ? vmax - vmin : 1;
+
+  const colors = new Float32Array(nVerts * 3);
+  for (let i = 0; i < nVerts; i++) {
+    const v = hksFlat[i * nFeatures + featureIdx];
+    const t = isFinite(v) ? (v - vmin) / range : 0.5;
+    const [r, g, b] = viridis(t);
+    colors[3 * i] = r;
+    colors[3 * i + 1] = g;
+    colors[3 * i + 2] = b;
+  }
+
+  group.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      if (child.material instanceof THREE.MeshStandardMaterial) {
+        child.material.vertexColors = true;
+        child.material.needsUpdate = true;
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -59,11 +143,17 @@ interface ThreeContext {
 
 type StatusKind = "idle" | "loading" | "loaded" | "error";
 
+interface HksData {
+  hks: Float32Array;
+  nVerts: number;
+  nFeatures: number;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function MeshDemo() {
+export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const threeRef = useRef<ThreeContext | null>(null);
@@ -74,6 +164,10 @@ export function MeshDemo() {
     "Drop a mesh file here, or click Upload",
   );
   const [isDragging, setIsDragging] = useState(false);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [hksData, setHksData] = useState<HksData | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState(0);
+  const [isComputing, setIsComputing] = useState(false);
 
   // -------------------------------------------------------------------------
   // Three.js initialisation
@@ -163,6 +257,8 @@ export function MeshDemo() {
 
     setStatusKind("loading");
     setStatusMsg(`Loading ${file.name}…`);
+    setHksData(null);
+    setSelectedFeature(0);
 
     // Clear any previously loaded mesh
     while (ctx.meshGroup.children.length > 0) {
@@ -219,6 +315,7 @@ export function MeshDemo() {
         }
       });
 
+      setCurrentFile(file);
       setStatusKind("loaded");
       setStatusMsg(
         `${file.name}  ·  ${nVerts.toLocaleString()} vertices, ${Math.round(nFaces).toLocaleString()} faces`,
@@ -253,6 +350,99 @@ export function MeshDemo() {
     },
     [loadMesh],
   );
+
+  const computeHks = useCallback(async () => {
+    if (!currentFile || !apiUrl) return;
+    const ctx = threeRef.current;
+    if (!ctx) return;
+
+    setIsComputing(true);
+    setStatusKind("loading");
+    setStatusMsg(`Sending ${currentFile.name} to backend…`);
+
+    const formData = new FormData();
+    formData.append("mesh_file", currentFile);
+
+    try {
+      const resp = await fetch(`${apiUrl}/compute-hks`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+        throw new Error((err as { detail?: string }).detail ?? resp.statusText);
+      }
+
+      const data = (await resp.json()) as {
+        vertices: string;
+        faces: string;
+        hks: string;
+        n_vertices: number;
+        n_faces: number;
+        n_features: number;
+      };
+
+      const vertices = decodeB64F32(data.vertices);
+      const facesI32 = decodeB64I32(data.faces);
+      const hks = decodeB64F32(data.hks);
+      const nVerts = data.n_vertices;
+      const nFaces = data.n_faces;
+      const nFeatures = data.n_features;
+
+      // Rebuild mesh from simplified geometry returned by the backend
+      while (ctx.meshGroup.children.length > 0) {
+        const child = ctx.meshGroup.children[0];
+        ctx.meshGroup.remove(child);
+        disposeObject(child);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+      geo.setIndex(
+        new THREE.BufferAttribute(new Uint32Array(facesI32.buffer), 1),
+      );
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        side: THREE.DoubleSide,
+        vertexColors: true,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      fitToView(mesh);
+      ctx.meshGroup.add(mesh);
+
+      ctx.camera.position.set(0, 0, 6);
+      ctx.camera.lookAt(0, 0, 0);
+      ctx.controls.target.set(0, 0, 0);
+      ctx.controls.update();
+
+      const newHksData: HksData = { hks, nVerts, nFeatures };
+      setHksData(newHksData);
+      setSelectedFeature(0);
+      applyFeatureColors(ctx.meshGroup, hks, nVerts, nFeatures, 0);
+
+      setStatusKind("loaded");
+      setStatusMsg(
+        `HKS computed · ${nVerts.toLocaleString()} vertices (simplified) · ${nFeatures} features`,
+      );
+    } catch (err) {
+      setStatusKind("error");
+      setStatusMsg(`Compute HKS failed: ${(err as Error).message}`);
+    } finally {
+      setIsComputing(false);
+    }
+  }, [apiUrl, currentFile]);
+
+  // Re-colour whenever the selected feature changes
+  useEffect(() => {
+    if (!hksData || !threeRef.current) return;
+    applyFeatureColors(
+      threeRef.current.meshGroup,
+      hksData.hks,
+      hksData.nVerts,
+      hksData.nFeatures,
+      selectedFeature,
+    );
+  }, [selectedFeature, hksData]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -329,16 +519,51 @@ export function MeshDemo() {
         <span className={`truncate text-sm ${msgColour}`}>{statusMsg}</span>
 
         <button
-          disabled
-          title="Coming soon — will run meshmash condensed_hks_pipeline on your mesh via the cloud backend"
-          className="ml-auto cursor-not-allowed rounded-md bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-500"
+          onClick={computeHks}
+          disabled={!currentFile || isComputing || !apiUrl}
+          title={
+            !apiUrl
+              ? "No backend configured (PUBLIC_HKS_API_URL not set)"
+              : !currentFile
+                ? "Upload a mesh first"
+                : isComputing
+                  ? "Computing…"
+                  : "Run condensed_hks_pipeline on this mesh"
+          }
+          className={`ml-auto rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            currentFile && !isComputing && apiUrl
+              ? "cursor-pointer bg-green-600 text-white hover:bg-green-500"
+              : "cursor-not-allowed bg-zinc-700 text-zinc-500"
+          }`}
         >
-          Compute HKS
-          <span className="ml-1.5 rounded bg-zinc-600 px-1.5 py-0.5 text-xs text-zinc-400">
-            coming soon
-          </span>
+          {isComputing ? "Computing…" : "Compute HKS"}
+          {!apiUrl && (
+            <span className="ml-1.5 rounded bg-zinc-600 px-1.5 py-0.5 text-xs text-zinc-400">
+              no backend
+            </span>
+          )}
         </button>
       </div>
+
+      {/* HKS feature slider — visible after a successful compute ----------- */}
+      {hksData && (
+        <div className="flex items-center gap-3">
+          <span className="whitespace-nowrap text-sm text-zinc-400">
+            HKS timescale:{" "}
+            <span className="font-mono text-zinc-200">{selectedFeature}</span>
+            <span className="text-zinc-600"> / {hksData.nFeatures - 1}</span>
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={hksData.nFeatures - 1}
+            step={1}
+            value={selectedFeature}
+            onChange={(e) => setSelectedFeature(Number(e.target.value))}
+            className="flex-1 accent-blue-400"
+          />
+        </div>
+      )}
     </div>
   );
 }
