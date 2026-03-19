@@ -56,6 +56,9 @@ import Wide from "./components/Wide.astro";
 import diagramApproach from "./assets/diagram_approach_figure.png";
 import showPipeline from "./assets/show_pipeline_figure.png";
 import cellGallery from "./assets/cell-gallery.png";
+import ModelViewer from "./components/ModelViewer.astro";
+import sampleMesh from "../data/sample_mesh.gltf?url";
+import sampleLargeMesh from "../data/microns_neuron_sample_simple.gltf?url";
 
 <HighlightedSection>
 
@@ -102,6 +105,24 @@ Together, these yield a **42× speedup** in compute time (from ~39,000 s to ~920
   </Figure>
 </Wide>
 
+## Interactive Mesh
+
+<div class="flex gap-4">
+  <div class="flex-1">
+    <figure>
+      <ModelViewer src={sampleMesh} alt="Sample neuron mesh" height="400px" />
+      <figcaption class="text-center">Caption for mesh 1.</figcaption>
+    </figure>
+  </div>
+  <div class="flex-1">
+    <figure>
+      <ModelViewer src={sampleLargeMesh} alt="Sample neuron mesh" height="400px" />
+      <figcaption class="text-center">Caption for mesh 2.</figcaption>
+    </figure>
+  </div>
+</div>
+
+
 ## Classifying 208.6 Million Synapses Across MICrONS
 
 We applied the pipeline to the full [MICrONS mouse visual cortex dataset](https://www.microns-explorer.org/), processing 75,241 neurons and classifying each synapse as targeting a **soma**, **dendritic shaft**, or **spine**. A random forest classifier trained on 110,946 manually labeled synapses achieves a weighted F1 score of **0.961** overall---0.977 on excitatory neurons and 0.925 on inhibitory neurons. This substantially outperforms the NEURD baseline (weighted F1 0.842).
@@ -128,6 +149,7 @@ The resulting dataset---postsynaptic target labels for over **208.6 million syna
 ## Data & Code
 
 All postsynaptic target predictions are publicly available via the [MICrONS CAVE](https://www.microns-explorer.org/) infrastructure (table: `synapse_target_predictions_ssa_v2`). Code for the mesh processing pipeline is available as the [**meshmash**](https://github.com/bdpedigo/meshmash) Python library. Experiment code and cloud deployment scripts are available in the linked repositories above.
+
 
 ## BibTeX
 
