@@ -253,7 +253,21 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     renderer.setSize(w, h, false);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x18181b); // zinc-900
+
+    const getViewerBg = () =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--viewer-bg")
+        .trim() || "#d4d4d8";
+
+    scene.background = new THREE.Color(getViewerBg());
+
+    const themeObserver = new MutationObserver(() => {
+      scene.background = new THREE.Color(getViewerBg());
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme", "class"],
+    });
 
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 1e8);
     camera.position.set(0, 0, 6);
@@ -297,6 +311,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
+      themeObserver.disconnect();
       if (threeRef.current) {
         disposeObject(threeRef.current.meshGroup);
         threeRef.current.renderer.dispose();

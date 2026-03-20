@@ -9,8 +9,8 @@ const { src, alt, width = "100%", height = "500px" } = Astro.props;
 ---
 
 <model-viewer
-  class="my-6 overflow-hidden rounded-lg bg-zinc-300"
-  style={`width: ${width}; height: ${height};`}
+  class="my-6 overflow-hidden rounded-lg"
+  style={`width: ${width}; height: ${height}; background-color: var(--viewer-bg);`}
   alt={alt}
   src={src}
   camera-controls

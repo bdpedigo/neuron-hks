@@ -126,6 +126,17 @@ main .katex-display {
   --input: var(--color-zinc-200);
   --outline: var(--color-zinc-400);
   --radius: 0.625rem;
+  --viewer-bg: #e6e6e6; /* zinc-300 — light mode viewer background */
+}
+
+[data-theme="dark"] {
+  --viewer-bg: #565658; /* zinc-900 — dark mode viewer background */
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="device"] {
+    --viewer-bg: #565658;
+  }
 }
 
 .dark {
