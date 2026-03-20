@@ -63,6 +63,13 @@ function decodeB64I32(b64: string): Int32Array {
   return new Int32Array(buf.buffer);
 }
 
+function decodeB64I8(b64: string): Int8Array {
+  const bin = atob(b64);
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new Int8Array(buf.buffer);
+}
+
 // ---------------------------------------------------------------------------
 // Viridis colormap (8 anchor colours, linear interpolation)
 // ---------------------------------------------------------------------------
@@ -130,6 +137,45 @@ function applyFeatureColors(
 }
 
 // ---------------------------------------------------------------------------
+// Discrete palette for prediction class indices
+// ---------------------------------------------------------------------------
+
+const PREDICTION_PALETTE: { rgb: [number, number, number]; css: string }[] = [
+  { rgb: [107 / 255, 114 / 255, 128 / 255], css: "#6b7280" }, // gray  — index 0
+  { rgb: [249 / 255, 115 / 255, 22 / 255], css: "#f97316" },  // orange — index 1
+  { rgb: [59 / 255, 130 / 255, 246 / 255], css: "#3b82f6" },  // blue   — index 2
+  { rgb: [34 / 255, 197 / 255, 94 / 255], css: "#22c55e" },   // green  — index 3
+  { rgb: [168 / 255, 85 / 255, 247 / 255], css: "#a855f7" },  // purple — index 4
+];
+
+function applyPredictionColors(
+  group: THREE.Group,
+  labels: Int8Array,
+  nVerts: number,
+) {
+  const colors = new Float32Array(nVerts * 3);
+  for (let i = 0; i < nVerts; i++) {
+    const idx = labels[i];
+    const entry =
+      idx >= 0 && idx < PREDICTION_PALETTE.length
+        ? PREDICTION_PALETTE[idx]
+        : PREDICTION_PALETTE[0];
+    colors[3 * i] = entry.rgb[0];
+    colors[3 * i + 1] = entry.rgb[1];
+    colors[3 * i + 2] = entry.rgb[2];
+  }
+  group.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+      if (child.material instanceof THREE.MeshStandardMaterial) {
+        child.material.vertexColors = true;
+        child.material.needsUpdate = true;
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -148,6 +194,14 @@ interface HksData {
   nVerts: number;
   nFeatures: number;
 }
+
+interface PredictionsData {
+  labels: Int8Array;
+  classes: string[];
+  nVerts: number;
+}
+
+type ColorMode = "hks" | "predictions";
 
 // ---------------------------------------------------------------------------
 // Component
@@ -168,6 +222,8 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
   const [hksData, setHksData] = useState<HksData | null>(null);
   const [selectedFeature, setSelectedFeature] = useState(0);
   const [isComputing, setIsComputing] = useState(false);
+  const [predictionsData, setPredictionsData] = useState<PredictionsData | null>(null);
+  const [colorMode, setColorMode] = useState<ColorMode>("hks");
 
   // -------------------------------------------------------------------------
   // Three.js initialisation
@@ -359,12 +415,14 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     setIsComputing(true);
     setStatusKind("loading");
     setStatusMsg(`Sending ${currentFile.name} to backend…`);
+    setColorMode("hks");
+    setPredictionsData(null);
 
     const formData = new FormData();
     formData.append("mesh_file", currentFile);
 
     try {
-      const resp = await fetch(`${apiUrl}/compute-hks`, {
+      const resp = await fetch(`${apiUrl}/compute-hks?include_predictions=true`, {
         method: "POST",
         body: formData,
       });
@@ -380,6 +438,8 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         n_vertices: number;
         n_faces: number;
         n_features: number;
+        predictions?: string | null;
+        classes?: string[] | null;
       };
 
       const vertices = decodeB64F32(data.vertices);
@@ -420,6 +480,16 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
       setSelectedFeature(0);
       applyFeatureColors(ctx.meshGroup, hks, nVerts, nFeatures, 0);
 
+      if (data.predictions && data.classes) {
+        setPredictionsData({
+          labels: decodeB64I8(data.predictions),
+          classes: data.classes,
+          nVerts,
+        });
+      } else {
+        setPredictionsData(null);
+      }
+
       setStatusKind("loaded");
       setStatusMsg(
         `HKS computed · ${nVerts.toLocaleString()} vertices (simplified) · ${nFeatures} features`,
@@ -432,17 +502,25 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     }
   }, [apiUrl, currentFile]);
 
-  // Re-colour whenever the selected feature changes
+  // Re-colour whenever the selected feature or color mode changes
   useEffect(() => {
-    if (!hksData || !threeRef.current) return;
-    applyFeatureColors(
-      threeRef.current.meshGroup,
-      hksData.hks,
-      hksData.nVerts,
-      hksData.nFeatures,
-      selectedFeature,
-    );
-  }, [selectedFeature, hksData]);
+    if (!threeRef.current) return;
+    if (colorMode === "predictions" && predictionsData) {
+      applyPredictionColors(
+        threeRef.current.meshGroup,
+        predictionsData.labels,
+        predictionsData.nVerts,
+      );
+    } else if (hksData) {
+      applyFeatureColors(
+        threeRef.current.meshGroup,
+        hksData.hks,
+        hksData.nVerts,
+        hksData.nFeatures,
+        selectedFeature,
+      );
+    }
+  }, [colorMode, selectedFeature, hksData, predictionsData]);
 
   // -------------------------------------------------------------------------
   // Render
@@ -545,8 +623,8 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         </button>
       </div>
 
-      {/* HKS feature slider — visible after a successful compute ----------- */}
-      {hksData && (
+      {/* HKS feature slider — visible in HKS mode after a successful compute */}
+      {hksData && colorMode === "hks" && (
         <div className="flex items-center gap-3">
           <span className="whitespace-nowrap text-sm text-zinc-400">
             HKS timescale:{" "}
@@ -562,6 +640,53 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
             onChange={(e) => setSelectedFeature(Number(e.target.value))}
             className="flex-1 accent-blue-400"
           />
+        </div>
+      )}
+
+      {/* Color mode toggle — visible once predictions are available -------- */}
+      {predictionsData && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-zinc-400">Color by:</span>
+          <div className="flex overflow-hidden rounded-md border border-zinc-700">
+            <button
+              onClick={() => setColorMode("hks")}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                colorMode === "hks"
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+              }`}
+            >
+              HKS timescale
+            </button>
+            <button
+              onClick={() => setColorMode("predictions")}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                colorMode === "predictions"
+                  ? "bg-orange-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+              }`}
+            >
+              Synapse prediction
+            </button>
+          </div>
+          {colorMode === "predictions" && (
+            <div className="flex items-center gap-3 text-sm text-zinc-400">
+              {predictionsData.classes.map((cls, i) => (
+                <span key={i} className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block h-3 w-3 flex-shrink-0 rounded-sm"
+                    style={{
+                      backgroundColor:
+                        i < PREDICTION_PALETTE.length
+                          ? PREDICTION_PALETTE[i].css
+                          : "#888",
+                    }}
+                  />
+                  {cls}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
