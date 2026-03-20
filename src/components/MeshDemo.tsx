@@ -235,6 +235,9 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
   const [colorMode, setColorMode] = useState<ColorMode>("hks");
   const [classColors, setClassColors] = useState<Record<string, string>>(DEFAULT_LABEL_COLORS);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [inputMode, setInputMode] = useState<"upload" | "cloudvolume">("upload");
+  const [cloudPath, setCloudPath] = useState("");
+  const [rootId, setRootId] = useState("");
 
   // -------------------------------------------------------------------------
   // Three.js initialisation
@@ -433,31 +436,13 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     [loadMesh],
   );
 
-  const computeHks = useCallback(async () => {
-    if (!currentFile || !apiUrl) return;
-    const ctx = threeRef.current;
-    if (!ctx) return;
+  // -------------------------------------------------------------------------
+  // Shared handler: decode a successful /compute-hks* response and update state
+  // -------------------------------------------------------------------------
 
-    setIsComputing(true);
-    setStatusKind("loading");
-    setStatusMsg(`Sending ${currentFile.name} to backend…`);
-    setColorMode("hks");
-    setPredictionsData(null);
-
-    const formData = new FormData();
-    formData.append("mesh_file", currentFile);
-
-    try {
-      const resp = await fetch(`${apiUrl}/compute-hks?include_predictions=true`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
-        throw new Error((err as { detail?: string }).detail ?? resp.statusText);
-      }
-
-      const data = (await resp.json()) as {
+  const applyHksResponse = useCallback(
+    (
+      data: {
         vertices: string;
         faces: string;
         hks: string;
@@ -466,13 +451,13 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         n_features: number;
         predictions?: string | null;
         classes?: string[] | null;
-      };
-
+      },
+      ctx: ThreeContext,
+    ) => {
       const vertices = decodeB64F32(data.vertices);
       const facesI32 = decodeB64I32(data.faces);
       const hks = decodeB64F32(data.hks);
       const nVerts = data.n_vertices;
-      const nFaces = data.n_faces;
       const nFeatures = data.n_features;
 
       // Rebuild mesh from simplified geometry returned by the backend
@@ -529,13 +514,77 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
       setStatusMsg(
         `HKS computed · ${nVerts.toLocaleString()} vertices (simplified) · ${nFeatures} features`,
       );
+    },
+    [],
+  );
+
+  const computeHks = useCallback(async () => {
+    if (!currentFile || !apiUrl) return;
+    const ctx = threeRef.current;
+    if (!ctx) return;
+
+    setIsComputing(true);
+    setStatusKind("loading");
+    setStatusMsg(`Sending ${currentFile.name} to backend…`);
+    setColorMode("hks");
+    setPredictionsData(null);
+
+    const formData = new FormData();
+    formData.append("mesh_file", currentFile);
+
+    try {
+      const resp = await fetch(`${apiUrl}/compute-hks?include_predictions=true`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+        throw new Error((err as { detail?: string }).detail ?? resp.statusText);
+      }
+      const data = await resp.json();
+      applyHksResponse(data, ctx);
     } catch (err) {
       setStatusKind("error");
       setStatusMsg(`Compute HKS failed: ${(err as Error).message}`);
     } finally {
       setIsComputing(false);
     }
-  }, [apiUrl, currentFile]);
+  }, [apiUrl, currentFile, applyHksResponse]);
+
+  const computeHksFromCloud = useCallback(async () => {
+    if (!cloudPath || !rootId || !apiUrl) return;
+    const ctx = threeRef.current;
+    if (!ctx) return;
+
+    setIsComputing(true);
+    setStatusKind("loading");
+    setStatusMsg(`Fetching mesh from CloudVolume…`);
+    setColorMode("hks");
+    setPredictionsData(null);
+
+    try {
+      const resp = await fetch(`${apiUrl}/compute-hks-from-cloudvolume`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cloud_path: cloudPath,
+          root_id: parseInt(rootId, 10),
+          include_predictions: true,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+        throw new Error((err as { detail?: string }).detail ?? resp.statusText);
+      }
+      const data = await resp.json();
+      applyHksResponse(data, ctx);
+    } catch (err) {
+      setStatusKind("error");
+      setStatusMsg(`Compute HKS failed: ${(err as Error).message}`);
+    } finally {
+      setIsComputing(false);
+    }
+  }, [apiUrl, cloudPath, rootId, applyHksResponse]);
 
   // Re-colour whenever the selected feature or color mode changes
   useEffect(() => {
@@ -570,8 +619,46 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         ? "text-zinc-400"
         : "text-zinc-500";
 
+  const switchMode = (mode: "upload" | "cloudvolume") => {
+    if (mode === inputMode) return;
+    setInputMode(mode);
+    setCurrentFile(null);
+    setHksData(null);
+    setPredictionsData(null);
+    setStatusKind("idle");
+    setStatusMsg(
+      mode === "upload"
+        ? "Drop a mesh file here, or click Upload"
+        : "Enter a CloudVolume path and root ID, then click Compute HKS",
+    );
+  };
+
   return (
     <div className="not-prose flex flex-col gap-3">
+      {/* Mode toggle ------------------------------------------------------- */}
+      <div className="flex overflow-hidden rounded-md border border-zinc-700 self-start">
+        <button
+          onClick={() => switchMode("upload")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            inputMode === "upload"
+              ? "bg-blue-600 text-white"
+              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+          }`}
+        >
+          Upload mesh
+        </button>
+        <button
+          onClick={() => switchMode("cloudvolume")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            inputMode === "cloudvolume"
+              ? "bg-blue-600 text-white"
+              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+          }`}
+        >
+          CloudVolume
+        </button>
+      </div>
+
       {/* 3-D viewer -------------------------------------------------------- */}
       <div
         ref={containerRef}
@@ -580,11 +667,12 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         }`}
         style={{ height: "500px" }}
         onDragOver={(e) => {
+          if (inputMode !== "upload") return;
           e.preventDefault();
           setIsDragging(true);
         }}
         onDragLeave={() => setIsDragging(false)}
-        onDrop={handleDrop}
+        onDrop={inputMode === "upload" ? handleDrop : undefined}
       >
         <canvas
           ref={canvasRef}
@@ -592,7 +680,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         />
 
         {/* Idle drop-zone overlay */}
-        {statusKind === "idle" && (
+        {statusKind === "idle" && inputMode === "upload" && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2">
             <svg
               className="h-8 w-8 text-zinc-600"
@@ -621,43 +709,91 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
 
       {/* Controls row ------------------------------------------------------ */}
       <div className="flex flex-wrap items-center gap-3">
-        <label className="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500">
-          Upload mesh
-          <input
-            type="file"
-            accept={ACCEPTED_EXTS.join(",")}
-            className="hidden"
-            onChange={handleFileInput}
-          />
-        </label>
+        {inputMode === "upload" ? (
+          <label className="cursor-pointer rounded-md bg-zinc-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-600">
+            Upload mesh
+            <input
+              type="file"
+              accept={ACCEPTED_EXTS.join(",")}
+              className="hidden"
+              onChange={handleFileInput}
+            />
+          </label>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="cloud_path (e.g. graphene://https://…)"
+              value={cloudPath}
+              onChange={(e) => setCloudPath(e.target.value)}
+              className="min-w-0 flex-1 rounded-md border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+            />
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="root_id"
+              value={rootId}
+              onChange={(e) => setRootId(e.target.value.replace(/\D/g, ""))}
+              className="w-36 rounded-md border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
+            />
+          </>
+        )}
 
         <span className={`truncate text-sm ${msgColour}`}>{statusMsg}</span>
 
-        <button
-          onClick={computeHks}
-          disabled={!currentFile || isComputing || !apiUrl}
-          title={
-            !apiUrl
-              ? "No backend configured (PUBLIC_HKS_API_URL not set)"
-              : !currentFile
-                ? "Upload a mesh first"
-                : isComputing
-                  ? "Computing…"
-                  : "Run condensed_hks_pipeline on this mesh"
-          }
-          className={`ml-auto rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-            currentFile && !isComputing && apiUrl
-              ? "cursor-pointer bg-green-600 text-white hover:bg-green-500"
-              : "cursor-not-allowed bg-zinc-700 text-zinc-500"
-          }`}
-        >
-          {isComputing ? "Computing…" : "Compute HKS"}
-          {!apiUrl && (
-            <span className="ml-1.5 rounded bg-zinc-600 px-1.5 py-0.5 text-xs text-zinc-400">
-              no backend
-            </span>
-          )}
-        </button>
+        {inputMode === "upload" ? (
+          <button
+            onClick={computeHks}
+            disabled={!currentFile || isComputing || !apiUrl}
+            title={
+              !apiUrl
+                ? "No backend configured (PUBLIC_HKS_API_URL not set)"
+                : !currentFile
+                  ? "Upload a mesh first"
+                  : isComputing
+                    ? "Computing…"
+                    : "Run condensed_hks_pipeline on this mesh"
+            }
+            className={`ml-auto rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              currentFile && !isComputing && apiUrl
+                ? "cursor-pointer bg-green-600 text-white hover:bg-green-500"
+                : "cursor-not-allowed bg-zinc-700 text-zinc-500"
+            }`}
+          >
+            {isComputing ? "Computing…" : "Compute HKS"}
+            {!apiUrl && (
+              <span className="ml-1.5 rounded bg-zinc-600 px-1.5 py-0.5 text-xs text-zinc-400">
+                no backend
+              </span>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={computeHksFromCloud}
+            disabled={!cloudPath || !rootId || isComputing || !apiUrl}
+            title={
+              !apiUrl
+                ? "No backend configured (PUBLIC_HKS_API_URL not set)"
+                : !cloudPath || !rootId
+                  ? "Enter a cloud path and root ID first"
+                  : isComputing
+                    ? "Computing…"
+                    : "Fetch mesh from CloudVolume and run condensed_hks_pipeline"
+            }
+            className={`ml-auto rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              cloudPath && rootId && !isComputing && apiUrl
+                ? "cursor-pointer bg-green-600 text-white hover:bg-green-500"
+                : "cursor-not-allowed bg-zinc-700 text-zinc-500"
+            }`}
+          >
+            {isComputing ? "Computing…" : "Compute HKS"}
+            {!apiUrl && (
+              <span className="ml-1.5 rounded bg-zinc-600 px-1.5 py-0.5 text-xs text-zinc-400">
+                no backend
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* HKS feature slider — visible in HKS mode after a successful compute */}
