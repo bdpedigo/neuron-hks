@@ -198,6 +198,33 @@ interface ThreeContext {
 
 type StatusKind = "idle" | "loading" | "loaded" | "error";
 
+// ---------------------------------------------------------------------------
+// Wake up a sleeping HuggingFace Space by polling /health until it responds.
+// HF Spaces go to sleep after 48 h of inactivity and take ~30–60 s to restart.
+// ---------------------------------------------------------------------------
+async function wakeBackend(
+  apiUrl: string,
+  onStatus: (msg: string) => void,
+  maxWaitMs = 120_000,
+  intervalMs = 5_000,
+): Promise<void> {
+  const deadline = Date.now() + maxWaitMs;
+  let attempt = 0;
+  while (Date.now() < deadline) {
+    try {
+      const resp = await fetch(`${apiUrl}/health`, { method: "GET" });
+      if (resp.ok) return; // backend is awake
+    } catch {
+      // network error while cold-starting — keep polling
+    }
+    attempt++;
+    const elapsed = Math.round((attempt * intervalMs) / 1000);
+    onStatus(`Waking up backend… (${elapsed} s elapsed, please wait)`);
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw new Error("Backend did not wake up in time — please try again.");
+}
+
 interface HksData {
   hks: Float32Array;
   nVerts: number;
@@ -525,7 +552,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
 
     setIsComputing(true);
     setStatusKind("loading");
-    setStatusMsg(`Sending ${currentFile.name} to backend…`);
+    setStatusMsg("Waking up backend…");
     setColorMode("hks");
     setPredictionsData(null);
 
@@ -533,6 +560,8 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     formData.append("mesh_file", currentFile);
 
     try {
+      await wakeBackend(apiUrl, setStatusMsg);
+      setStatusMsg(`Sending ${currentFile.name} to backend…`);
       const resp = await fetch(`${apiUrl}/compute-hks?include_predictions=true`, {
         method: "POST",
         body: formData,
@@ -558,11 +587,13 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
 
     setIsComputing(true);
     setStatusKind("loading");
-    setStatusMsg(`Fetching mesh from CloudVolume…`);
+    setStatusMsg("Waking up backend…");
     setColorMode("hks");
     setPredictionsData(null);
 
     try {
+      await wakeBackend(apiUrl, setStatusMsg);
+      setStatusMsg(`Fetching mesh from CloudVolume…`);
       const resp = await fetch(`${apiUrl}/compute-hks-from-cloudvolume`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
