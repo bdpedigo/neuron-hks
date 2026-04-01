@@ -240,6 +240,25 @@ interface PredictionsData {
 type ColorMode = "hks" | "predictions";
 
 // ---------------------------------------------------------------------------
+// Datastack presets
+// ---------------------------------------------------------------------------
+
+const DATASTACK_PRESETS = [
+  {
+    key: "microns",
+    label: "MICrONS",
+    cloudPath: "precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300",
+    rootId: "864691135307555142",
+  },
+  {
+    key: "h01",
+    label: "H01",
+    cloudPath: "precomputed://gs://h01-release/data/20210601/c3",
+    rootId: "664288036",
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -251,7 +270,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
 
   const [statusKind, setStatusKind] = useState<StatusKind>("idle");
   const [statusMsg, setStatusMsg] = useState(
-    "Drop a mesh file here, or click Upload",
+    "Enter a cloud path and root ID, then click Compute HKS",
   );
   const [isDragging, setIsDragging] = useState(false);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
@@ -262,9 +281,10 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
   const [colorMode, setColorMode] = useState<ColorMode>("hks");
   const [classColors, setClassColors] = useState<Record<string, string>>(DEFAULT_LABEL_COLORS);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [inputMode, setInputMode] = useState<"upload" | "cloudvolume">("upload");
+  const [inputMode, setInputMode] = useState<"upload" | "cloudvolume">("cloudvolume");
   const [cloudPath, setCloudPath] = useState("precomputed://gs://iarpa_microns/minnie/minnie65/seg_m1300");
   const [rootId, setRootId] = useState("864691135307555142");
+  const [selectedPreset, setSelectedPreset] = useState("microns");
 
   // -------------------------------------------------------------------------
   // Three.js initialisation
@@ -660,7 +680,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     setStatusMsg(
       mode === "upload"
         ? "Drop a mesh file here, or click Upload"
-        : "Enter a CloudVolume path and root ID, then click Compute HKS",
+        : "Enter a cloud path and root ID, then click Compute HKS",
     );
   };
 
@@ -668,6 +688,16 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     <div className="not-prose flex flex-col gap-3">
       {/* Mode toggle ------------------------------------------------------- */}
       <div className="flex overflow-hidden rounded-md border border-zinc-700 self-start">
+        <button
+          onClick={() => switchMode("cloudvolume")}
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            inputMode === "cloudvolume"
+              ? "bg-blue-600 text-white"
+              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+          }`}
+        >
+          Cloud path
+        </button>
         <button
           onClick={() => switchMode("upload")}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
@@ -677,16 +707,6 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
           }`}
         >
           Upload mesh
-        </button>
-        <button
-          onClick={() => switchMode("cloudvolume")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            inputMode === "cloudvolume"
-              ? "bg-blue-600 text-white"
-              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-          }`}
-        >
-          CloudVolume
         </button>
       </div>
 
@@ -809,14 +829,41 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         )}
       </div>
 
-      {/* CloudVolume inputs — shown below controls row in cloudvolume mode */}
+      {/* Cloud path inputs — shown below controls row in cloudvolume mode */}
       {inputMode === "cloudvolume" && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-zinc-400">
+            The cloud path should be a publicly accessible Google Cloud Storage bucket that can be
+            read by Neuroglancer (e.g.{" "}
+            <span className="font-mono text-zinc-300">precomputed://gs://bucket/path</span>).
+          </p>
+          <div className="flex items-center gap-2">
+            <label className="whitespace-nowrap text-sm text-zinc-400">Choose a public datastack:</label>
+            <select
+              value={selectedPreset}
+              onChange={(e) => {
+                const preset = DATASTACK_PRESETS.find((p) => p.key === e.target.value);
+                if (preset) {
+                  setSelectedPreset(preset.key);
+                  setCloudPath(preset.cloudPath);
+                  setRootId(preset.rootId);
+                } else {
+                  setSelectedPreset("");
+                }
+              }}
+              className="min-w-[10rem] rounded-md border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-sm text-zinc-200 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">Custom</option>
+              {DATASTACK_PRESETS.map((p) => (
+                <option key={p.key} value={p.key}>{p.label}</option>
+              ))}
+            </select>
+          </div>
           <input
             type="text"
-            placeholder="Cloud path (e.g. graphene://https://…)"
+            placeholder="Cloud path (e.g. precomputed://gs://…)"
             value={cloudPath}
-            onChange={(e) => setCloudPath(e.target.value)}
+            onChange={(e) => { setCloudPath(e.target.value); setSelectedPreset(""); }}
             className="w-full rounded-md border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
           />
           <input
@@ -824,7 +871,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
             inputMode="numeric"
             placeholder="Root ID"
             value={rootId}
-            onChange={(e) => setRootId(e.target.value.replace(/\D/g, ""))}
+            onChange={(e) => { setRootId(e.target.value.replace(/\D/g, "")); setSelectedPreset(""); }}
             className="w-full rounded-md border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:border-blue-500 focus:outline-none"
           />
         </div>
