@@ -4,7 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { PLYLoader } from "three/examples/jsm/loaders/PLYLoader.js";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 
 const ACCEPTED_EXTS = [".ply", ".stl", ".obj", ".gltf", ".glb"];
 
@@ -192,7 +192,7 @@ interface ThreeContext {
   renderer: THREE.WebGLRenderer;
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
-  controls: OrbitControls;
+  controls: TrackballControls;
   meshGroup: THREE.Group;
 }
 
@@ -322,18 +322,19 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 1e8);
     camera.position.set(0, 0, 6);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
+    const controls = new TrackballControls(camera, renderer.domElement);
+    controls.rotateSpeed = 3.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+    controls.dynamicDampingFactor = 0.15;
 
-    // Lighting — key + fill
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const key = new THREE.DirectionalLight(0xffffff, 1.5);
-    key.position.set(5, 10, 7);
-    scene.add(key);
-    const fill = new THREE.DirectionalLight(0xffffff, 0.3);
-    fill.position.set(-5, -5, -5);
-    scene.add(fill);
+    // Lighting — mostly ambient with a subtle camera-attached fill so
+    // there's gentle shading without any strong directional shadow
+    scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+    const camLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    camera.add(camLight);
+    camLight.position.set(0, 0, 1);
+    scene.add(camera);
 
     const meshGroup = new THREE.Group();
     scene.add(meshGroup);
@@ -347,6 +348,17 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
     };
     animate();
 
+    // Prevent context menu so right-click drag can be used for panning
+    const onContextMenu = (e: MouseEvent) => e.preventDefault();
+    canvas.addEventListener("contextmenu", onContextMenu);
+
+    // Shift-drag to pan: override keyState (2 = PAN, -1 = NONE)
+    const ctrl = controls as unknown as { keyState: number };
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Shift") ctrl.keyState = 2; };
+    const onKeyUp   = (e: KeyboardEvent) => { if (e.key === "Shift") ctrl.keyState = -1; };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+
     // Keep canvas resolution in sync when the container resizes
     const ro = new ResizeObserver(() => {
       const w = container.clientWidth;
@@ -355,11 +367,15 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      controls.handleResize();
     });
     ro.observe(container);
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      canvas.removeEventListener("contextmenu", onContextMenu);
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
       ro.disconnect();
       themeObserver.disconnect();
       if (threeRef.current) {
@@ -581,7 +597,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
 
     try {
       await wakeBackend(apiUrl, setStatusMsg);
-      setStatusMsg(`Sending ${currentFile.name} to backend…`);
+      setStatusMsg(`Sending mesh to backend and running pipeline... this may take a moment`);
       const resp = await fetch(`${apiUrl}/compute-hks?include_predictions=true`, {
         method: "POST",
         body: formData,
@@ -613,7 +629,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
 
     try {
       await wakeBackend(apiUrl, setStatusMsg);
-      setStatusMsg(`Running pipeline… this may take a moment`);
+      setStatusMsg(`Running pipeline... this may take a moment`);
       const resp = await fetch(`${apiUrl}/compute-hks-from-cloudvolume`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
