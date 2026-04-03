@@ -832,6 +832,91 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         )}
       </div>
 
+      {/* HKS feature slider — visible in HKS mode after a successful compute */}
+      {hksData && colorMode === "hks" && (
+        <div className="flex items-center gap-3">
+          <span className="whitespace-nowrap text-sm text-zinc-400">
+            HKS feature:{" "}
+            <span className="font-mono text-zinc-400">{selectedFeature}</span>
+            <span className="text-zinc-600"> / {hksData.nFeatures}</span>
+          </span>
+          <input
+            type="range"
+            min={1}
+            max={hksData.nFeatures}
+            step={1}
+            value={selectedFeature}
+            onChange={(e) => setSelectedFeature(Number(e.target.value))}
+            className="flex-1 accent-blue-400"
+          />
+        </div>
+      )}
+
+      {/* Color mode toggle — visible once predictions are available -------- */}
+      {predictionsData && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-zinc-400">Color by:</span>
+          <div className="flex overflow-hidden rounded-md border border-zinc-700">
+            <button
+              onClick={() => setColorMode("hks")}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                colorMode === "hks"
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+              }`}
+            >
+              HKS feature
+            </button>
+            <button
+              onClick={() => setColorMode("predictions")}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                colorMode === "predictions"
+                  ? "bg-orange-600 text-white"
+                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+              }`}
+            >
+              Compartment predictions
+            </button>
+          </div>
+          {colorMode === "predictions" && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-400">
+              {predictionsData.classes.map((cls) => (
+                <span key={cls} className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block h-3 w-3 flex-shrink-0 rounded-sm"
+                    style={{ backgroundColor: classColors[cls] ?? FALLBACK_COLOR }}
+                  />
+                  {cls}
+                </span>
+              ))}
+              <button
+                onClick={() => setShowColorPicker((v) => !v)}
+                className="ml-1 rounded px-2 py-0.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-300"
+              >
+                {showColorPicker ? "Hide colors" : "Customize colors"}
+              </button>
+            </div>
+          )}
+          {colorMode === "predictions" && showColorPicker && (
+            <div className="flex flex-wrap gap-3 rounded-md border border-zinc-700 bg-zinc-800/50 p-3">
+              {predictionsData.classes.map((cls) => (
+                <label key={cls} className="flex cursor-pointer items-center gap-1.5 text-sm text-zinc-300">
+                  <input
+                    type="color"
+                    value={classColors[cls] ?? FALLBACK_COLOR}
+                    onChange={(e) =>
+                      setClassColors((prev) => ({ ...prev, [cls]: e.target.value }))
+                    }
+                    className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                  />
+                  {cls}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Controls row ------------------------------------------------------ */}
       <div className="flex flex-wrap items-center gap-3">
         {inputMode === "upload" ? (
@@ -1018,90 +1103,6 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         </div>
       )}
 
-      {/* HKS feature slider — visible in HKS mode after a successful compute */}
-      {hksData && colorMode === "hks" && (
-        <div className="flex items-center gap-3">
-          <span className="whitespace-nowrap text-sm text-zinc-400">
-            HKS feature:{" "}
-            <span className="font-mono text-zinc-400">{selectedFeature}</span>
-            <span className="text-zinc-600"> / {hksData.nFeatures}</span>
-          </span>
-          <input
-            type="range"
-            min={1}
-            max={hksData.nFeatures}
-            step={1}
-            value={selectedFeature}
-            onChange={(e) => setSelectedFeature(Number(e.target.value))}
-            className="flex-1 accent-blue-400"
-          />
-        </div>
-      )}
-
-      {/* Color mode toggle — visible once predictions are available -------- */}
-      {predictionsData && (
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-zinc-400">Color by:</span>
-          <div className="flex overflow-hidden rounded-md border border-zinc-700">
-            <button
-              onClick={() => setColorMode("hks")}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                colorMode === "hks"
-                  ? "bg-blue-600 text-white"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-              }`}
-            >
-              HKS feature
-            </button>
-            <button
-              onClick={() => setColorMode("predictions")}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                colorMode === "predictions"
-                  ? "bg-orange-600 text-white"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-              }`}
-            >
-              Compartment predictions
-            </button>
-          </div>
-          {colorMode === "predictions" && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-400">
-              {predictionsData.classes.map((cls) => (
-                <span key={cls} className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block h-3 w-3 flex-shrink-0 rounded-sm"
-                    style={{ backgroundColor: classColors[cls] ?? FALLBACK_COLOR }}
-                  />
-                  {cls}
-                </span>
-              ))}
-              <button
-                onClick={() => setShowColorPicker((v) => !v)}
-                className="ml-1 rounded px-2 py-0.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-300"
-              >
-                {showColorPicker ? "Hide colors" : "Customize colors"}
-              </button>
-            </div>
-          )}
-          {colorMode === "predictions" && showColorPicker && (
-            <div className="flex flex-wrap gap-3 rounded-md border border-zinc-700 bg-zinc-800/50 p-3">
-              {predictionsData.classes.map((cls) => (
-                <label key={cls} className="flex cursor-pointer items-center gap-1.5 text-sm text-zinc-300">
-                  <input
-                    type="color"
-                    value={classColors[cls] ?? FALLBACK_COLOR}
-                    onChange={(e) =>
-                      setClassColors((prev) => ({ ...prev, [cls]: e.target.value }))
-                    }
-                    className="h-6 w-6 cursor-pointer rounded border-0 bg-transparent p-0"
-                  />
-                  {cls}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
