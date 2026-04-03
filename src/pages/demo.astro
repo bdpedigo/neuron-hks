@@ -61,12 +61,18 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
             fragment of that object to keep IO and compute time reasonable.
             The pipeline will use the cursor position to select the nearest point on 
             the object in neuroglancer link mode, or a random point if no cursor is 
-            provided. The underlying pipeline can be run on larger objects using the Python code.
+            provided (rerun to sample a new random point). 
+            The underlying pipeline can be run on larger objects using the Python code.
           </li>
           <li>
             Many pipelines generate mesh fragments, and the details of how these
             are stitched together are important to create a (roughly) topologically
             correct representation of the object's surface.
+          </li>
+          <li>
+            The pipeline has parameters (described in the paper) that were optimized for
+            postsynaptic target classification in MICrONS; for other problems, you may
+            want to play with these parameters.
           </li>
           <li>
             If uploading your own mesh, meshes should have units of nanometers. Meshes in <code>.ply</code>, <code>.obj</code>,

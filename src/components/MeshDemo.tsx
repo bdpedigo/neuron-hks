@@ -934,7 +934,9 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         <div className="flex flex-col gap-3">
           <p className="text-sm text-zinc-400">
             Paste a full Neuroglancer link. The backend will extract the first segmentation
-            source, the first selected segment ID, and the cursor position. The pipeline will run on the mesh region nearest to the cursor position.
+            source, the first selected segment ID, and the cursor position. 
+            The pipeline will run on the mesh region nearest to the cursor position. 
+            Does not support shortened links or links that require authentication.
           </p>
           <textarea
             rows={4}
