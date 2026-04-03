@@ -558,7 +558,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
       const newHksData: HksData = { hks, nVerts, nFeatures };
       setHksData(newHksData);
       const midFeature = Math.floor(nFeatures / 2);
-      setSelectedFeature(midFeature);
+      setSelectedFeature(midFeature + 1);
       applyFeatureColors(ctx.meshGroup, hks, nVerts, nFeatures, midFeature);
 
       if (data.predictions && data.classes) {
@@ -716,7 +716,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
         hksData.hks,
         hksData.nVerts,
         hksData.nFeatures,
-        selectedFeature,
+        selectedFeature - 1,
       );
     }
   }, [colorMode, selectedFeature, hksData, predictionsData, classColors]);
@@ -935,8 +935,7 @@ export function MeshDemo({ apiUrl = "" }: { apiUrl?: string }) {
           <p className="text-sm text-zinc-400">
             Paste a full Neuroglancer link. The backend will extract the first segmentation
             source, the first selected segment ID, and the cursor position. 
-            The pipeline will run on the mesh region nearest to the cursor position. 
-            Does not support shortened links or links that require authentication.
+            The pipeline will run on the mesh region nearest to the cursor position. Does not support shortened links or links that require authentication.
           </p>
           <textarea
             rows={4}
