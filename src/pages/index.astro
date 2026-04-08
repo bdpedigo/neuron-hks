@@ -1,5 +1,5 @@
 ---
-import { Font } from "astro:assets";
+import { Font, Image } from "astro:assets";
 
 import Links from "../components/Links.astro";
 import Authors from "../components/Authors.astro";
@@ -77,10 +77,13 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
   >
     <header class="relative overflow-hidden">
       {headerBgImage && (
-        <div
-          class="absolute inset-0 opacity-20 dark:opacity-20"
-          style={`background-image: url(${headerBgImage.src}); background-size: 100%; background-position: center;`}
-        ></div>
+        <Image
+          src={headerBgImage}
+          alt=""
+          class="absolute inset-0 w-full h-full object-cover opacity-20 dark:opacity-20 !m-0"
+          format="avif"
+          loading="eager"
+        />
       )}
       <div class="relative mx-auto max-w-[50rem] px-6 pt-16 pb-12 text-center">
         <h1 class="text-5xl font-medium">{title}</h1>
