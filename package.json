@@ -9,6 +9,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
+    "generate:notebook": "uv run --with nbconvert jupyter nbconvert --to html --template basic --output programmatic-access --output-dir src/generated/ public/programmatic_access.ipynb",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier .",

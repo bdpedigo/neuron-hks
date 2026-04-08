@@ -1,0 +1,64 @@
+---
+import { Font } from "astro:assets";
+import ThemeToggle from "../components/ThemeToggle.astro";
+import Notebook from "../components/Notebook.astro";
+import "../styles/global.css";
+
+const baseUrl = import.meta.env.BASE_URL;
+const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
+---
+
+<!doctype html>
+<html class="bg-white dark:bg-zinc-900" lang="en" data-theme="device">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="description"
+      content="How to programmatically access the MICrONS postsynaptic target predictions produced by the HKS pipeline."
+    />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href={`${prefix}favicon.svg`} />
+    <Font
+      cssVariable="--font-noto-sans"
+      preload={[{ subset: "latin", style: "normal" }]}
+    />
+    <title>Programmatic Access — MICrONS HKS Predictions</title>
+  </head>
+  <body
+    class="prose prose-lg prose-zinc dark:prose-invert prose-a:text-blue-500 prose-a:dark:text-blue-300 prose-a:no-underline prose-a:hover:underline prose-a:font-normal prose-code:bg-zinc-200 prose-code:dark:bg-zinc-800 prose-code:text-zinc-800 prose-code:dark:text-zinc-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-medium prose-code:before:content-none prose-code:after:content-none max-w-none pt-16 pb-6 font-(family-name:--font-noto-sans)"
+  >
+    <ThemeToggle initialTheme="device" />
+
+    <main class="max-w-3xl mx-auto px-6">
+      <header class="mb-8">
+        <a
+          href={prefix}
+          class="not-prose text-sm text-zinc-500 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+        >
+          ← Back to paper
+        </a>
+        <h1 class="mt-4">Programmatic Access</h1>
+        <p class="lead text-zinc-600 dark:text-zinc-400">
+          The postsynaptic target predictions for over 208.6 million synapses in
+          the MICrONS mouse visual cortex dataset are publicly available via the{" "}
+          <a href="https://caveclient.readthedocs.io/">CAVE</a> infrastructure.
+          The examples below show how to query the data with Python. Download
+          the full notebook to run these examples locally.
+        </p>
+        <div class="not-prose mt-6">
+          <a
+            href={`${prefix}programmatic-access.ipynb`}
+            download="programmatic-access.ipynb"
+            class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+          >
+            <span>⬇</span>
+            <span>Download notebook (.ipynb)</span>
+          </a>
+        </div>
+      </header>
+
+      <Notebook src="src/generated/programmatic-access.html" />
+    </main>
+  </body>
+</html>

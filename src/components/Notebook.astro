@@ -1,0 +1,292 @@
+---
+import { readFileSync } from "fs";
+import { join } from "path";
+
+interface Props {
+  /** Path relative to the project root, e.g. "src/generated/programmatic-access.html" */
+  src: string;
+}
+
+const { src } = Astro.props;
+const html = readFileSync(join(process.cwd(), src), "utf8");
+---
+
+<div class="notebook not-prose" set:html={html} />
+
+<style>
+  /* Scoped to .notebook so styles don't bleed out. Targets nbconvert v6 "basic" template classes. */
+
+  /* ── Cell layout ─────────────────────────────────────────── */
+  .notebook :global(.cell) {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Hide the ¶ anchor links on headings */
+  .notebook :global(.anchor-link) {
+    display: none;
+  }
+
+  /* Markdown cells: inherit surrounding prose styles */
+  .notebook :global(.text_cell_render) {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    color: var(--color-zinc-700);
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.text_cell_render),
+  @media (prefers-color-scheme: dark) {
+    :global([data-theme="device"]) .notebook :global(.text_cell_render) {
+      color: var(--color-zinc-300);
+    }
+  }
+
+  .notebook :global(.text_cell_render h1),
+  .notebook :global(.text_cell_render h2),
+  .notebook :global(.text_cell_render h3) {
+    font-weight: 600;
+    color: var(--color-zinc-900);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.text_cell_render h1),
+  :global([data-theme="dark"]) .notebook :global(.text_cell_render h2),
+  :global([data-theme="dark"]) .notebook :global(.text_cell_render h3) {
+    color: var(--color-zinc-100);
+  }
+
+  .notebook :global(.text_cell_render p) {
+    margin-bottom: 0.75rem;
+  }
+
+  .notebook :global(.text_cell_render a) {
+    color: #3b82f6; /* blue-500 */
+    text-decoration: none;
+  }
+
+  .notebook :global(.text_cell_render a:hover) {
+    text-decoration: underline;
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.text_cell_render a) {
+    color: #93c5fd; /* blue-300 */
+  }
+
+  .notebook :global(.text_cell_render ul),
+  .notebook :global(.text_cell_render ol) {
+    margin: 0.5rem 0 0.75rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .notebook :global(.text_cell_render ul) {
+    list-style-type: disc;
+  }
+
+  .notebook :global(.text_cell_render ol) {
+    list-style-type: decimal;
+  }
+
+  .notebook :global(.text_cell_render li) {
+    margin-bottom: 0.25rem;
+  }
+
+  .notebook :global(.text_cell_render code) {
+    background: var(--color-zinc-200);
+    color: var(--color-zinc-800);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.text_cell_render code) {
+    background: var(--color-zinc-700);
+    color: var(--color-zinc-200);
+  }
+
+  /* ── Code input ──────────────────────────────────────────── */
+  /* Prompt label ("In [N]:") */
+  .notebook :global(.prompt.input_prompt) {
+    font-size: 0.75rem;
+    color: var(--color-zinc-400);
+    font-family: ui-monospace, monospace;
+    padding: 0.5rem 0.75rem 0 0;
+    width: 5rem;
+    flex-shrink: 0;
+    text-align: right;
+    user-select: none;
+  }
+
+  .notebook :global(.input) {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  /* .inner_cell is the direct flex child that should stretch */
+  .notebook :global(.inner_cell) {
+    flex: 1;
+    min-width: 0; /* prevent flex child from overflowing */
+  }
+
+  .notebook :global(.input_area) {
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .notebook :global(.input_area .highlight) {
+    margin: 0;
+    padding: 0.875rem 1rem;
+    background: var(--color-zinc-200) !important;
+    border-radius: 0.5rem;
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.input_area .highlight),
+  @media (prefers-color-scheme: dark) {
+    :global([data-theme="device"]) .notebook :global(.input_area .highlight) {
+      background: var(--color-zinc-800) !important;
+    }
+  }
+
+  .notebook :global(.input_area pre) {
+    margin: 0;
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* ── Output area ─────────────────────────────────────────── */
+  /* Indent to align with the code block (past the 5rem prompt) */
+  .notebook :global(.output_wrapper) {
+    margin-left: 5rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Hide "Out [N]:" — not useful on a web page */
+  .notebook :global(.prompt.output_prompt) {
+    display: none;
+  }
+
+  .notebook :global(.output_area) {
+    border-left: 2px solid var(--color-zinc-300);
+    padding-left: 0.875rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--color-zinc-700);
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.output_area) {
+    border-left-color: var(--color-zinc-600);
+    color: var(--color-zinc-300);
+  }
+
+  .notebook :global(.output_area pre) {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  /* Images (e.g. matplotlib) */
+  .notebook :global(.output_area img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.375rem;
+  }
+
+  /* ── DataFrame / HTML table output ──────────────────────── */
+  /* Scroll horizontally if the table is wide */
+  .notebook :global(.output_html) {
+    overflow-x: auto;
+  }
+
+  /* Override pandas' inline border="1" and scoped styles */
+  .notebook :global(.dataframe) {
+    border-collapse: collapse;
+    border: none;
+    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    width: auto;
+  }
+
+  .notebook :global(.dataframe th),
+  .notebook :global(.dataframe td) {
+    padding: 0.3rem 0.75rem;
+    text-align: left !important; /* override pandas right-align */
+    border-bottom: 1px solid var(--color-zinc-300);
+    white-space: nowrap;
+  }
+
+  .notebook :global(.dataframe thead th) {
+    background: var(--color-zinc-100);
+    color: var(--color-zinc-700);
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-zinc-300);
+  }
+
+  .notebook :global(.dataframe tbody tr:hover td) {
+    background: var(--color-zinc-50);
+  }
+
+  /* Dark mode */
+  :global([data-theme="dark"]) .notebook :global(.dataframe th),
+  :global([data-theme="dark"]) .notebook :global(.dataframe td) {
+    border-bottom-color: var(--color-zinc-600);
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.dataframe thead th) {
+    background: var(--color-zinc-700);
+    color: var(--color-zinc-200);
+    border-bottom-color: var(--color-zinc-500);
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.dataframe tbody tr:hover td) {
+    background: var(--color-zinc-800);
+  }
+
+  /* ── Pygments syntax highlighting ────────────────────────── */
+  /* Light */
+  .notebook :global(.highlight .c1),
+  .notebook :global(.highlight .c) { color: #6b7280; } /* comment: zinc-500 */
+  .notebook :global(.highlight .k),
+  .notebook :global(.highlight .kn),
+  .notebook :global(.highlight .kd),
+  .notebook :global(.highlight .kr),
+  .notebook :global(.highlight .kc) { color: #2563eb; font-weight: 500; } /* keyword: blue-600 */
+  .notebook :global(.highlight .s),
+  .notebook :global(.highlight .s1),
+  .notebook :global(.highlight .s2),
+  .notebook :global(.highlight .sb) { color: #16a34a; } /* string: green-600 */
+  .notebook :global(.highlight .mi),
+  .notebook :global(.highlight .mf),
+  .notebook :global(.highlight .mh) { color: #ea580c; } /* number: orange-600 */
+  .notebook :global(.highlight .nb) { color: #7c3aed; } /* builtin: violet-600 */
+  .notebook :global(.highlight .nf),
+  .notebook :global(.highlight .nc) { color: #0369a1; } /* function/class: sky-700 */
+  .notebook :global(.highlight .o),
+  .notebook :global(.highlight .ow) { color: #9333ea; } /* operator: purple-600 */
+
+  /* Dark overrides */
+  :global([data-theme="dark"]) .notebook :global(.highlight .c1),
+  :global([data-theme="dark"]) .notebook :global(.highlight .c) { color: #9ca3af; } /* zinc-400 */
+  :global([data-theme="dark"]) .notebook :global(.highlight .k),
+  :global([data-theme="dark"]) .notebook :global(.highlight .kn),
+  :global([data-theme="dark"]) .notebook :global(.highlight .kd),
+  :global([data-theme="dark"]) .notebook :global(.highlight .kr),
+  :global([data-theme="dark"]) .notebook :global(.highlight .kc) { color: #60a5fa; } /* blue-400 */
+  :global([data-theme="dark"]) .notebook :global(.highlight .s),
+  :global([data-theme="dark"]) .notebook :global(.highlight .s1),
+  :global([data-theme="dark"]) .notebook :global(.highlight .s2),
+  :global([data-theme="dark"]) .notebook :global(.highlight .sb) { color: #4ade80; } /* green-400 */
+  :global([data-theme="dark"]) .notebook :global(.highlight .mi),
+  :global([data-theme="dark"]) .notebook :global(.highlight .mf),
+  :global([data-theme="dark"]) .notebook :global(.highlight .mh) { color: #fb923c; } /* orange-400 */
+  :global([data-theme="dark"]) .notebook :global(.highlight .nb) { color: #a78bfa; } /* violet-400 */
+  :global([data-theme="dark"]) .notebook :global(.highlight .nf),
+  :global([data-theme="dark"]) .notebook :global(.highlight .nc) { color: #38bdf8; } /* sky-400 */
+  :global([data-theme="dark"]) .notebook :global(.highlight .o),
+  :global([data-theme="dark"]) .notebook :global(.highlight .ow) { color: #c084fc; } /* purple-400 */
+</style>
