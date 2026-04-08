@@ -1,0 +1,22 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  subtitle?: string;
+}
+
+const { href, title, subtitle } = Astro.props;
+---
+
+<a
+  href={href}
+  class="group flex items-center gap-4 rounded-xl border border-zinc-200 p-5 transition-all hover:border-blue-400 hover:bg-blue-50/50 hover:shadow-sm no-underline dark:border-zinc-700 dark:hover:border-blue-500 dark:hover:bg-blue-950/20"
+>
+  <span class="shrink-0 text-3xl font-black text-blue-500 transition-transform group-hover:translate-x-1">→</span>
+  <div>
+    <p class="font-semibold leading-tight text-zinc-800 dark:text-zinc-200">{title}</p>
+    {subtitle && (
+      <p class="mt-1 text-sm text-blue-600 dark:text-blue-400" set:html={subtitle} />
+    )}
+  </div>
+</a>

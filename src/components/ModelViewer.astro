@@ -4,8 +4,9 @@ interface Props {
   alt?: string;
   width?: string;
   height?: string;
+  outline?: boolean;
 }
-const { src, alt, width = "100%", height = "500px" } = Astro.props;
+const { src, alt, width = "100%", height = "500px", outline = false } = Astro.props;
 ---
 
 <model-viewer
@@ -17,7 +18,14 @@ const { src, alt, width = "100%", height = "500px" } = Astro.props;
   auto-rotate
   rotation-per-second="20deg"
   interaction-prompt-threshold="6000"
-  orientation="270deg 0deg 0deg"></model-viewer>
+  orientation="270deg 0deg 0deg">
+  {outline && (
+    <effect-composer render-mode="quality">
+      <outline-effect color="black" strength="0" smoothing="0" blend-mode="default"></outline-effect>
+    </effect-composer>
+  )}
+</model-viewer>
 <script>
   import "@google/model-viewer";
+  import "@google/model-viewer-effects";
 </script>

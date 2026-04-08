@@ -57,6 +57,8 @@ import diagramApproach from "./assets/diagram_approach_figure.png";
 import showPipeline from "./assets/show_pipeline_figure.png";
 import cellGallery from "./assets/cell-gallery.png";
 import ModelViewer from "./components/ModelViewer.astro";
+import ActionCard from "./components/ActionCard.astro";
+import ActionCardGrid from "./components/ActionCardGrid.astro";
 import sampleMesh from "../data/sample_mesh.gltf?url";
 import sampleLargeMesh from "../data/microns_neuron_sample_simple.gltf?url";
 
@@ -110,13 +112,13 @@ Together, these yield a **42× speedup** in compute time (from ~39,000 s to ~920
 <div class="flex gap-4">
   <div class="flex-1">
     <figure>
-      <ModelViewer src={sampleMesh} alt="Sample neuron mesh" height="400px" />
+      <ModelViewer src={sampleMesh} alt="Sample neuron mesh" height="400px" outline />
       <figcaption class="text-center">Predictions plotted on a piece of dendrite from MICrONS</figcaption>
     </figure>
   </div>
   <div class="flex-1">
     <figure>
-      <ModelViewer src={sampleLargeMesh} alt="Sample neuron mesh" height="400px" />
+      <ModelViewer src={sampleLargeMesh} alt="Sample neuron mesh" height="400px" outline />
       <figcaption class="text-center">Predictions plotted on an entire pyramidal neuron from MICrONS</figcaption>
     </figure>
   </div>
@@ -157,7 +159,14 @@ The resulting dataset---postsynaptic target labels for over **208.6 million syna
 
 ## Data & Code
 
-All postsynaptic target predictions are publicly available via the [MICrONS CAVE](https://www.microns-explorer.org/) infrastructure (table: `synapse_target_predictions_ssa_v2`). Code for the mesh processing pipeline is available as the [**meshmash**](https://github.com/bdpedigo/meshmash) Python library. Experiment code and cloud deployment scripts are available in the linked repositories above.
+<ActionCardGrid>
+  <ActionCard href="./demo" title="Try HKS feature generation on sample data" subtitle="Interactive web demo" />
+  <ActionCard href="https://bdpedigo.github.io/meshmash/examples/tutorial/" title="Run HKS on my own neurons" subtitle="meshmash tutorial" />
+  <ActionCard href="https://www.microns-explorer.org/" title="Visualize predictions in MICrONS" subtitle="MICrONS Explorer" />
+  <ActionCard href="https://tutorial.microns-explorer.org/python-tools.html" title="Query predictions programmatically" subtitle='MICrONS tutorials · <code class="font-mono text-xs text-zinc-600 dark:text-zinc-300">synapse_target_predictions_ssa_v2</code>' />
+  <ActionCard href="https://huggingface.co/bdpedigo/synapse_target_hks_rf" title="Apply the HKS classifier to my features" subtitle="Model on Hugging Face" />
+  <ActionCard href="https://github.com/bdpedigo/cloud-mesh" title="Deploy this system in the cloud" subtitle="Cloud deployment on GitHub" />
+</ActionCardGrid>
 
 
 ## BibTeX
@@ -176,12 +185,3 @@ All postsynaptic target predictions are publicly available via the [MICrONS CAVE
 }
 ```
 
-{/* 
-I want to...
-- visualize the predictions in MICrONS
-- query the predictions in MICrONS programatically
-- run HKS feature generation and compartment prediciton on sample data in the web
-- run HKS feature generation via the Python code
-- apply the HKS-based classifier to computed features
-- deploy this system in the cloud
- */}
