@@ -5,13 +5,25 @@ import { join } from "path";
 interface Props {
   /** Path relative to the project root, e.g. "src/generated/programmatic-access.html" */
   src: string;
+  /** If provided, renders a download button immediately after the first H1 in the notebook */
+  downloadHref?: string;
 }
 
-const { src } = Astro.props;
-const html = readFileSync(join(process.cwd(), src), "utf8");
+const { src, downloadHref } = Astro.props;
+let html = readFileSync(join(process.cwd(), src), "utf8");
+
+if (downloadHref) {
+  const downloadButton = `<div class="nb-download not-prose">
+    <a href="${downloadHref}" download class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+      <span>&#8595;</span>
+      <span>Download notebook (.ipynb)</span>
+    </a>
+  </div>`;
+  html = html.replace("</h1>", `</h1>${downloadButton}`);
+}
 ---
 
-<div class="notebook not-prose" set:html={html} />
+<div class="notebook" set:html={html} />
 
 <style>
   /* Scoped to .notebook so styles don't bleed out. Targets nbconvert v6 "basic" template classes. */
@@ -25,107 +37,15 @@ const html = readFileSync(join(process.cwd(), src), "utf8");
   .notebook :global(.anchor-link) {
     display: none;
   }
-
-  /* Markdown cells: inherit surrounding prose styles */
-  .notebook :global(.text_cell_render) {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
-    color: var(--color-zinc-700);
+  /* ── Download button (injected after H1) ────────────────── */
+  .notebook :global(.nb-download) {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
   }
-
-  :global([data-theme="dark"]) .notebook :global(.text_cell_render),
-  @media (prefers-color-scheme: dark) {
-    :global([data-theme="device"]) .notebook :global(.text_cell_render) {
-      color: var(--color-zinc-300);
-    }
-  }
-
-  .notebook :global(.text_cell_render h1),
-  .notebook :global(.text_cell_render h2),
-  .notebook :global(.text_cell_render h3) {
-    font-weight: 600;
-    color: var(--color-zinc-900);
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  :global([data-theme="dark"]) .notebook :global(.text_cell_render h1),
-  :global([data-theme="dark"]) .notebook :global(.text_cell_render h2),
-  :global([data-theme="dark"]) .notebook :global(.text_cell_render h3) {
-    color: var(--color-zinc-100);
-  }
-
-  .notebook :global(.text_cell_render p) {
-    margin-bottom: 0.75rem;
-  }
-
-  .notebook :global(.text_cell_render a) {
-    color: #3b82f6; /* blue-500 */
-    text-decoration: none;
-  }
-
-  .notebook :global(.text_cell_render a:hover) {
-    text-decoration: underline;
-  }
-
-  :global([data-theme="dark"]) .notebook :global(.text_cell_render a) {
-    color: #93c5fd; /* blue-300 */
-  }
-
-  .notebook :global(.text_cell_render ul),
-  .notebook :global(.text_cell_render ol) {
-    margin: 0.5rem 0 0.75rem 0;
-    padding-left: 1.5rem;
-  }
-
-  .notebook :global(.text_cell_render ul) {
-    list-style-type: disc;
-  }
-
-  .notebook :global(.text_cell_render ol) {
-    list-style-type: decimal;
-  }
-
-  .notebook :global(.text_cell_render li) {
-    margin-bottom: 0.25rem;
-  }
-
-  .notebook :global(.text_cell_render code) {
-    background: var(--color-zinc-200);
-    color: var(--color-zinc-800);
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-    font-size: 0.875em;
-    font-family: ui-monospace, "Cascadia Code", "Source Code Pro", monospace;
-  }
-
-  :global([data-theme="dark"]) .notebook :global(.text_cell_render code) {
-    background: var(--color-zinc-700);
-    color: var(--color-zinc-200);
-  }
-
   /* ── Code input ──────────────────────────────────────────── */
-  /* Prompt label ("In [N]:") */
+  /* Hide "In [N]:" prompts */
   .notebook :global(.prompt.input_prompt) {
-    font-size: 0.75rem;
-    color: var(--color-zinc-400);
-    font-family: ui-monospace, monospace;
-    padding: 0.5rem 0.75rem 0 0;
-    width: 5rem;
-    flex-shrink: 0;
-    text-align: right;
-    user-select: none;
-  }
-
-  .notebook :global(.input) {
-    display: flex;
-    align-items: flex-start;
-  }
-
-  /* .inner_cell is the direct flex child that should stretch */
-  .notebook :global(.inner_cell) {
-    flex: 1;
-    min-width: 0; /* prevent flex child from overflowing */
+    display: none;
   }
 
   .notebook :global(.input_area) {
@@ -155,12 +75,17 @@ const html = readFileSync(join(process.cwd(), src), "utf8");
     line-height: 1.6;
     white-space: pre;
     overflow-x: auto;
+    /* Override prose's default dark-background pre color in light mode */
+    color: var(--color-zinc-800) !important;
+    background: transparent !important;
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.input_area pre) {
+    color: var(--color-zinc-200) !important;
   }
 
   /* ── Output area ─────────────────────────────────────────── */
-  /* Indent to align with the code block (past the 5rem prompt) */
   .notebook :global(.output_wrapper) {
-    margin-left: 5rem;
     margin-top: 0.25rem;
   }
 
@@ -187,6 +112,16 @@ const html = readFileSync(join(process.cwd(), src), "utf8");
     margin: 0;
     white-space: pre-wrap;
     overflow-x: auto;
+    /* Override prose's dark pre background */
+    background: var(--color-zinc-50) !important;
+    color: var(--color-zinc-700) !important;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+  }
+
+  :global([data-theme="dark"]) .notebook :global(.output_area pre) {
+    background: var(--color-zinc-900) !important;
+    color: var(--color-zinc-300) !important;
   }
 
   /* Images (e.g. matplotlib) */

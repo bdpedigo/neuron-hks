@@ -31,34 +31,16 @@ const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
     <ThemeToggle initialTheme="device" />
 
     <main class="max-w-3xl mx-auto px-6">
-      <header class="mb-8">
+      <header class="mb-4">
         <a
           href={prefix}
           class="not-prose text-sm text-zinc-500 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
         >
           ← Back to paper
         </a>
-        <h1 class="mt-4">Programmatic Access</h1>
-        <p class="lead text-zinc-600 dark:text-zinc-400">
-          The postsynaptic target predictions for over 208.6 million synapses in
-          the MICrONS mouse visual cortex dataset are publicly available via the{" "}
-          <a href="https://caveclient.readthedocs.io/">CAVE</a> infrastructure.
-          The examples below show how to query the data with Python. Download
-          the full notebook to run these examples locally.
-        </p>
-        <div class="not-prose mt-6">
-          <a
-            href={`${prefix}programmatic-access.ipynb`}
-            download="programmatic-access.ipynb"
-            class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-          >
-            <span>⬇</span>
-            <span>Download notebook (.ipynb)</span>
-          </a>
-        </div>
       </header>
 
-      <Notebook src="src/generated/programmatic-access.html" />
+      <Notebook src="src/generated/programmatic-access.html" downloadHref={`${prefix}programmatic_access.ipynb`} />
     </main>
   </body>
 </html>
