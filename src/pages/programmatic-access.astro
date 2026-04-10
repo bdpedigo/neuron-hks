@@ -1,46 +1,15 @@
 ---
-import { Font } from "astro:assets";
-import ThemeToggle from "../components/ThemeToggle.astro";
+import SubPageLayout from "../layouts/SubPageLayout.astro";
 import Notebook from "../components/Notebook.astro";
-import "../styles/global.css";
 
 const baseUrl = import.meta.env.BASE_URL;
 const prefix = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
 ---
 
-<!doctype html>
-<html class="bg-white dark:bg-zinc-900" lang="en" data-theme="device">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="description"
-      content="How to programmatically access the MICrONS postsynaptic target predictions produced by the HKS pipeline."
-    />
-    <meta name="viewport" content="width=device-width" />
-    <meta name="generator" content={Astro.generator} />
-    <link rel="icon" type="image/svg+xml" href={`${prefix}favicon.svg`} />
-    <Font
-      cssVariable="--font-noto-sans"
-      preload={[{ subset: "latin", style: "normal" }]}
-    />
-    <title>Programmatic Access — MICrONS HKS Predictions</title>
-  </head>
-  <body
-    class="prose prose-lg prose-zinc dark:prose-invert prose-a:text-blue-500 prose-a:dark:text-blue-300 prose-a:no-underline prose-a:hover:underline prose-a:font-normal prose-code:bg-zinc-200 prose-code:dark:bg-zinc-800 prose-code:text-zinc-800 prose-code:dark:text-zinc-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-medium prose-code:before:content-none prose-code:after:content-none max-w-none pt-16 pb-6 font-(family-name:--font-noto-sans)"
-  >
-    <ThemeToggle initialTheme="device" />
-
-    <main class="max-w-3xl mx-auto px-6">
-      <header class="mb-4">
-        <a
-          href={prefix}
-          class="not-prose text-sm text-zinc-500 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-        >
-          ← Back to paper
-        </a>
-      </header>
-
-      <Notebook src="src/generated/programmatic-access.html" downloadHref={`${prefix}programmatic_access.ipynb`} />
-    </main>
-  </body>
-</html>
+<SubPageLayout
+  title="Programmatic Access — MICrONS HKS Predictions"
+  description="How to programmatically access the MICrONS postsynaptic target predictions produced by the HKS pipeline."
+  mainClass="max-w-3xl mx-auto px-6"
+>
+  <Notebook src="src/generated/programmatic-access.html" downloadHref={`${prefix}programmatic_access.ipynb`} />
+</SubPageLayout>
